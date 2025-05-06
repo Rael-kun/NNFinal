@@ -5,12 +5,11 @@ import re
 from fractions import Fraction
 
 
-
 def pitchstr_to_num(note_name):
     return pitch.Pitch(note_name).midi
 
 
-BPM = 480 ##################################################### REALLY FAST FOR NOW, JUST TESTING PURPOSES
+BPM = 480
 second_per_quarter_note = 60 / BPM
 
 
@@ -19,6 +18,7 @@ def pitch_to_midi(pitch):
     if not match:
         return None
     name, accidental, octave = match.groups()
+    octave = max(int(octave), 1)
     name = name.upper()
 
     if accidental == '-' or accidental == 'b':
@@ -30,7 +30,7 @@ def pitch_to_midi(pitch):
 
     if base is None:
         return None
-    midi_number = base + (int(octave) + 1) * 12
+    midi_number = base + (octave + 1) * 12
     if midi_number is None or midi_number < 0 or midi_number > 127:
         return None
 
@@ -62,11 +62,31 @@ def get_duration(dur:str):
         dur = 1 #default quarter note
     return dur
 
-def play_tokens(tokens, instrument):
+def parse_tokens(tokens):
+    i = 0
+    notes = []
+    while i < len(tokens):
+        if tokens[i][:4] == "note" or tokens[i] == "rest":
+            try:
+                dur = eval(tokens[i+1]) #check if it's evalable, but still use the fraction
+                dur = tokens[i+1]
+            except:
+                dur = 1
+            notes.append(f"{tokens[i]}_{dur}")
+            i += 2
+        elif tokens[i] in ["<simul>", "</simul>", "<end_song>"]:
+            notes += tokens[i]
+            i += 1
+        else:
+            i += 1
+    return notes
+        
+def play_tokens(tokens, instrument, parse=False):
     pygame.midi.init()
     player = pygame.midi.Output(0)
     player.set_instrument(instrument)
-
+    if parse:
+        tokens = parse_tokens(tokens)
     i = 0
     while i < len(tokens):
 
@@ -135,8 +155,10 @@ def play_tokens(tokens, instrument):
 #------------------------------------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------------------------------------
 
+
+tokens = ['noteC#4', '1/3', 'noteE-6', '1/8', 'noteE-8', '2', 'noteC#4', '1/3', 'noteB-1', '1/8', '<simul>', 'noteC#4', '2', 'noteC#4', '1/3', 'noteD8', '1/3', 'noteC#4', '1/4', 'noteC#4', '1/3', '</simul>', 'noteC#4', '2', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteB-0', '1/8', 'noteE-8', '2', 'noteC#4', '1/3', 'noteB-0', '1/8', 'noteE-8', '1/8', 'noteE4', '1/8', 'noteE-8', '1/8', 'noteB4', '2', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '2', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '2', 'noteC#4', '1/3', 'noteC#4', '2', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '2', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/4', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3', 'noteC#4', '1/3']
 try:
-    play_tokens(notes, 0)
+    play_tokens(tokens, instrument=0, parse=True) #0: Piano, 101: Synth
 except:
     pygame.midi.quit()
 
